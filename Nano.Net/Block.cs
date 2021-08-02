@@ -15,9 +15,6 @@ namespace Nano.Net
     {
         [JsonIgnore] public string Hash => GetHash();
 
-        private const string MissingInformationError =
-            "Not all properties for this account have been set. Please update this account's properties manually or use the RpcClient UpdateAccountAsync method.";
-
         /// <summary>
         /// Create a send block and sign it. Requires the sending Account object to have all the properties correctly set.
         /// </summary>
@@ -31,7 +28,7 @@ namespace Nano.Net
                 throw new UnopenedAccountException();
 
             if (sender.MissingInformation)
-                throw new Exception(MissingInformationError);
+                throw new AccountMissingInformationException();
 
             if (amount.Raw > sender.Balance.Raw)
                 throw new Exception("Insufficient balance.");
@@ -63,7 +60,7 @@ namespace Nano.Net
         public static Block CreateReceiveBlock(Account receiver, string blockHash, Amount amount, string powNonce)
         {
             if (receiver.MissingInformation)
-                throw new Exception(MissingInformationError);
+                throw new AccountMissingInformationException();
 
             var block = new Block()
             {
@@ -83,7 +80,7 @@ namespace Nano.Net
 
         /// <summary><inheritdoc cref="CreateReceiveBlock(Account, string, Amount, string)"/></summary>
         /// <param name="receiver"><inheritdoc cref="CreateReceiveBlock(Account, string, Amount, string)"/></param>
-        /// <param name="receivableBlock">The receivable block to be received.</param>
+        /// <param name="receivableBlock">The ReceivableBlock object to be received.</param>
         /// <param name="powNonce"><inheritdoc cref="CreateReceiveBlock(Account, string, Amount, string)"/></param>
         /// <returns><inheritdoc cref="CreateReceiveBlock(Account, string, Amount, string)"/></returns>
         public static Block CreateReceiveBlock(Account receiver, ReceivableBlock receivableBlock, string powNonce)
@@ -91,35 +88,28 @@ namespace Nano.Net
             return CreateReceiveBlock(receiver, receivableBlock.Hash, Amount.FromRaw(receivableBlock.Amount), powNonce);
         }
 
-        public string GetHash()
+        private string GetHash()
         {
-            var bytes = new List<byte>();
-
             var type = new byte[32];
             type[31] = 0x6;
-            bytes.AddRange(type);
-
-            byte[] account = PublicKeyFromAddress(Account);
-            bytes.AddRange(account);
-
-            byte[] previous = HexToBytes(Previous);
-            bytes.AddRange(previous);
-
-            byte[] representative = PublicKeyFromAddress(Representative);
-            bytes.AddRange(representative);
 
             byte[] balanceBytes = BigInteger.Parse(Balance).ToByteArray(true, true);
-            bytes.AddRange(new byte[16 - balanceBytes.Length]); // pad balance
-            bytes.AddRange(balanceBytes);
 
-            byte[] link = Subtype == BlockSubtype.Send ? PublicKeyFromAddress(Link) : HexToBytes(Link);
-            bytes.AddRange(link);
-
-            byte[] final = Blake2BHash(32, bytes.ToArray());
+            byte[] final = Blake2BHash
+            (
+                32,
+                type,
+                PublicKeyFromAddress(Account),
+                HexToBytes(Previous),
+                PublicKeyFromAddress(Representative),
+                new byte[16 - balanceBytes.Length],
+                balanceBytes,
+                Subtype == BlockSubtype.Send ? PublicKeyFromAddress(Link) : HexToBytes(Link)
+            );
 
             return BytesToHex(final);
         }
-        
+
         /// <summary>
         /// Sign this block using the provided private key and set its Signature property
         /// </summary>

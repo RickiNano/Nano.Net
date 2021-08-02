@@ -34,7 +34,7 @@ namespace Nano.Net
             if (hex.Length % 2 != 0)
                 throw new ArgumentException("Hex string length isn't valid.");
 
-            if (!Regex.IsMatch(hex, @"^[0-9A-F]+$"))
+            if (!Regex.IsMatch(hex, @"^(?i)[0-9A-F]+$"))
                 throw new ArgumentException("Invalid hex characters.");
 
             return Enumerable.Range(0, hex.Length)
@@ -103,12 +103,14 @@ namespace Nano.Net
             return publicKeyBytes;
         }
 
-        internal static byte[] Blake2BHash(int sizeInBytes, byte[] data)
+        internal static byte[] Blake2BHash(int sizeInBytes, params byte[][] data)
         {
             Hasher hasher = Blake2B.Create(new Blake2BConfig() { OutputSizeInBytes = sizeInBytes });
-
             hasher.Init();
-            hasher.Update(data);
+
+            foreach (byte[] bytes in data)
+                hasher.Update(bytes);
+
             return hasher.Finish();
         }
 
@@ -123,7 +125,7 @@ namespace Nano.Net
 
             byte[] seedBytes = HexToBytes(seed);
 
-            return Blake2BHash(32, seedBytes.Concat(indexBytes).ToArray());
+            return Blake2BHash(32, seedBytes, indexBytes);
         }
 
         public static byte[] PublicKeyFromPrivateKey(byte[] privateKey)
