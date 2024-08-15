@@ -1,8 +1,7 @@
 # Nano.Net
 
-A .NET library for building projects with [nano](https://nano.org). Still in development.  
-Please feel free to submit any changes, bugfixes or new features using the issues/pull requests feature here on
-GitHub.  
+A .NET library for building projects with [nano](https://nano.org).
+Please feel free to report any issues or submit pull requests.
 This project follows Semantic Versioning.
 
 ## Features/Roadmap
@@ -139,6 +138,8 @@ w.Confirmation += (client, message) => { Console.WriteLine(message.Message.Amoun
 // Don't forget to run Start() to actually start receiving the messages.
 await w.Start();
 ```
+
+If you have any questions about nano, the [community Discord server](https://chat.nano.org/) is a good place to ask them.
 
 ## Acknowledgements
 
